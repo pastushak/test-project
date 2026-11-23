@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Колесо фортуни</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1fb;--panel:#fff;--ink:#1f1b3d;--muted:#6b6790;--line:#e1ddf3;--accent:#5b3df5;--accent-ink:#fff;--shadow:0 20px 50px -20px rgba(60,40,160,.35);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15122e;--panel:#1f1b42;--ink:#f1eeff;--muted:#a49fd0;--line:#352f66;--accent:#ffb23e;--accent-ink:#241a00;--shadow:0 20px 50px -20px #000}}
+:root[data-theme="dark"]{--bg:#15122e;--panel:#1f1b42;--ink:#f1eeff;--muted:#a49fd0;--line:#352f66;--accent:#ffb23e;--accent-ink:#241a00;--shadow:0 20px 50px -20px #000}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif;min-height:100vh}
+h1{font-family:Unbounded,Manrope,sans-serif;font-weight:700;font-size:clamp(1.4rem,4vw,2.1rem);margin:0;letter-spacing:-.01em}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 18px 40px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}
+header p{margin:6px 0 0;color:var(--muted)}
+.theme{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:var(--shadow)}
+.stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px}
+.wheelbox{position:relative;width:100%;max-width:520px;aspect-ratio:1}
+canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;top:-6px;left:50%;width:38px;height:46px;transform:translateX(-50%);z-index:2;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.spin{font-family:Unbounded,sans-serif;font-weight:700;font-size:1.05rem;background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:16px 46px;cursor:pointer;transition:transform .15s}
+.spin:hover:not(:disabled){transform:scale(1.04)}.spin:disabled{opacity:.55;cursor:default}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+label.t{font-weight:800;display:block;margin-bottom:8px}
+textarea{width:100%;min-height:210px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;line-height:1.6}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:.9rem;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.opt{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:.95rem}
+.opt input{width:18px;height:18px;accent-color:var(--accent)}
+.count{color:var(--muted);font-size:.9rem}
+h2{font-size:1rem;margin:20px 0 8px}
+ol{margin:0;padding-left:22px;color:var(--muted);max-height:150px;overflow:auto}
+ol li{padding:3px 0}ol li b{color:var(--ink)}
+.modal{position:fixed;inset:0;background:rgba(10,8,30,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal.on{display:flex}
+.win{background:var(--panel);border-radius:28px;padding:34px 28px;max-width:440px;width:100%;text-align:center;border:1px solid var(--line);animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.win small{color:var(--muted);font-weight:600}
+.win .name{font-family:Unbounded,sans-serif;font-size:clamp(1.5rem,6vw,2.2rem);margin:12px 0 24px;word-break:break-word;line-height:1.2}
+.win .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.win .btns button{font:inherit;font-weight:700;border-radius:999px;padding:12px 24px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink)}
+.win .btns .main{background:var(--accent);color:var(--accent-ink);border:0}
+@media(prefers-reduced-motion:reduce){.win{animation:none}.spin{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div><h1>Колесо фортуни</h1><p>Жеребкування, вибір тем і швидкі рішення</p></div>
+<button class="theme" id="theme" type="button">Тема</button>
+</header>
+<div class="grid">
+<section class="card stage">
+<div class="wheelbox">
+<svg class="pointer" viewBox="0 0 38 46" aria-hidden="true"><path d="M19 46 2 10a19 19 0 1 1 34 0z" fill="#ff4d6d" stroke="#fff" stroke-width="3"/><circle cx="19" cy="15" r="6" fill="#fff"/></svg>
+<canvas id="c" role="img" aria-label="Колесо фортуни"></canvas>
+</div>
+<button class="spin" id="spin" type="button">Крутити!</button>
+</section>
+<section class="card">
+<label class="t" for="items">Варіанти (кожен з нового рядка)</label>
+<textarea id="items" placeholder="Напишіть теми або імена, по одному в рядок"></textarea>
+<div class="row">
+<button class="chip" id="shuffle" type="button">Перемішати</button>
+<button class="chip" id="sample" type="button">Приклад</button>
+<button class="chip" id="clear" type="button">Очистити</button>
+</div>
+<label class="opt"><input type="checkbox" id="remove"> Прибирати переможця з колеса (щоб не повторювалось)</label>
+<div class="count" id="count"></div>
+<h2>Історія виборів</h2>
+<ol id="hist"></ol>
+</section>
+</div>
+</div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="wn">
+<div class="win"><small>Випало</small><div class="name" id="wn"></div>
+<div class="btns"><button class="main" id="again" type="button">Ще раз</button><button id="close" type="button">Закрити</button></div></div>
+</div>
+<script>
+(function(){
+var COLORS=['#ff6b6b','#ffb23e','#2ec4b6','#4cc9f0','#7b5cff','#ff7ac6','#8ac926','#f77f00'];
+var $=function(i){return document.getElementById(i)};
+var ta=$('items'),cv=$('c'),ctx=cv.getContext('2d'),spinBtn=$('spin'),hist=$('hist');
+var angle=0,spinning=false,history=[];
+function load(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function save(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+var saved=load('wheel-items');
+ta.value=saved!==null?saved:'Тема 1\nТема 2\nТема 3\nТема 4\nТема 5\nТема 6';
+$('remove').checked=load('wheel-remove')==='1';
+function items(){return ta.value.split('\n').map(function(s){return s.trim()}).filter(Boolean)}
+function size(){var r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=r.width*d;cv.height=r.height*d;draw()}
+function draw(){
+var W=cv.width,R=W/2,list=items(),n=list.length;
+ctx.clearRect(0,0,W,W);
+ctx.save();ctx.translate(R,R);
+var rim=R*0.03,rad=R-rim-4;
+ctx.beginPath();ctx.arc(0,0,R-2,0,7);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--panel')||'#fff';ctx.fill();
+if(!n){ctx.fillStyle='#8884';ctx.beginPath();ctx.arc(0,0,rad,0,7);ctx.fill();ctx.fillStyle='#888';ctx.font='600 '+W*0.045+'px Manrope';ctx.textAlign='center';ctx.fillText('Додайте варіанти',0,0);ctx.restore();return}
+var a=2*Math.PI/n;
+ctx.rotate(angle);
+for(var i=0;i<n;i++){
+ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,rad,i*a,(i+1)*a);ctx.closePath();
+ctx.fillStyle=COLORS[i%COLORS.length];
+if(n>1&&i===n-1&&n%COLORS.length===1)ctx.fillStyle='#b5a8ff';
+ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='rgba(255,255,255,.85)';ctx.stroke();
+ctx.save();ctx.rotate(i*a+a/2);
+var fs=Math.max(W*0.03,Math.min(W*0.055,rad*a*0.42));
+ctx.font='800 '+fs+'px Manrope,sans-serif';ctx.fillStyle='#1b1636';ctx.textAlign='right';ctx.textBaseline='middle';
+var t=list[i],max=rad*0.72;
+while(ctx.measureText(t).width>max&&t.length>2)t=t.slice(0,-2);
+if(t!==list[i])t=t.trimEnd()+'…';
+ctx.fillText(t,rad-W*0.04,0);ctx.restore();
+}
+ctx.restore();
+ctx.save();ctx.translate(R,R);
+ctx.beginPath();ctx.arc(0,0,R*0.09,0,7);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#ff4d6d';ctx.stroke();ctx.restore();
+}
+function update(){
+var n=items().length;
+$('count').textContent=n?'Варіантів на колесі: '+n:'Колесо порожнє — додайте варіанти';
+spinBtn.disabled=spinning||n<2;
+save('wheel-items',ta.value);draw();
+}
+function renderHist(){hist.innerHTML='';history.slice().reverse().forEach(function(h){var li=document.createElement('li');li.innerHTML='<b></b>';li.firstChild.textContent=h;hist.appendChild(li)});if(!history.length){var li=document.createElement('li');li.style.listStyle='none';li.style.marginLeft='-22px';li.textContent='Поки порожньо — крутніть колесо.';hist.appendChild(li)}}
+var current=null;
+function spin(){
+var list=items();if(spinning||list.length<2)return;
+spinning=true;spinBtn.disabled=true;
+var n=list.length,a=2*Math.PI/n;
+var start=angle,extra=(5+Math.random()*3)*2*Math.PI+Math.random()*2*Math.PI;
+var reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+var dur=reduce?600:5200,t0=performance.now();
+function frame(now){
+var p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,4);
+angle=start+extra*e;draw();
+if(p<1){requestAnimationFrame(frame)}else{
+spinning=false;
+var pos=(((1.5*Math.PI-angle)%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+var idx=Math.floor(pos/a)%n;
+finish(list,idx);
+}}
+requestAnimationFrame(frame);
+}
+function finish(list,idx){
+current=list[idx];history.push(current);renderHist();
+$('wn').textContent=current;$('modal').classList.add('on');$('again').focus();
+if($('remove').checked){list.splice(idx,1);ta.value=list.join('\n')}
+update();
+}
+function closeModal(){$('modal').classList.remove('on')}
+spinBtn.onclick=spin;
+$('again').onclick=function(){closeModal();setTimeout(spin,150)};
+$('close').onclick=closeModal;
+$('modal').onclick=function(e){if(e.target===this)closeModal()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
+ta.addEventListener('input',update);
+$('remove').onchange=function(){save('wheel-remove',this.checked?'1':'0')};
+$('shuffle').onclick=function(){var l=items();for(var i=l.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=l[i];l[i]=l[j];l[j]=t}ta.value=l.join('\n');update()};
+$('sample').onclick=function(){ta.value='Штучний інтелект\nЕкологія\nМузика\nКосмос\nСпорт\nІсторія України\nТехнології\nПодорожі';update()};
+$('clear').onclick=function(){ta.value='';update();ta.focus()};
+$('theme').onclick=function(){var r=document.documentElement,dark=r.getAttribute('data-theme')?r.getAttribute('data-theme')==='dark':window.matchMedia('(prefers-color-scheme:dark)').matches;r.setAttribute('data-theme',dark?'light':'dark');save('wheel-theme',dark?'light':'dark');draw()};
+var th=load('wheel-theme');if(th)document.documentElement.setAttribute('data-theme',th);
+window.addEventListener('resize',size);
+renderHist();update();size();
+})();
+</script>
+</body>
+</html>
